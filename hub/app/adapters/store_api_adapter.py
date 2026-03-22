@@ -21,4 +21,18 @@ class StoreApiAdapter(StoreGateway):
         Returns:
             bool: True if the data is successfully saved, False otherwise.
         """
-        # Implement it
+        # get json data
+        payload = [data.model_dump() for data in processed_agent_data_batch]
+        
+        # зробити post запит на ‘{store_host}/processed_agent_data’ з списком елементів ProcessedAgentData.
+        endpoint = f"{self.api_base_url}/processed_agent_data"
+        
+        try:
+            # send POST request
+            response = requests.post(endpoint, json=payload)
+            response.raise_for_status()
+            logging.info(f"Success: {len(processed_agent_data_batch)} records saved to Store.")
+            return True
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error occurred while sending data to Store API: {e}")
+            return False
