@@ -6,6 +6,7 @@ from redis import Redis
 import paho.mqtt.client as mqtt
 
 from app.adapters.store_api_adapter import StoreApiAdapter
+from app.adapters.agent_mqtt_adapter import AgentMQTTAdapter
 from app.entities.processed_agent_data import ProcessedAgentData
 from config import (
     STORE_API_BASE_URL,
@@ -31,9 +32,20 @@ redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT)
 # Create an instance of the StoreApiAdapter using the configuration
 store_adapter = StoreApiAdapter(api_base_url=STORE_API_BASE_URL)
 # Create an instance of the AgentMQTTAdapter using the configuration
+mqtt_adapter = AgentMQTTAdapter(
+    broker_host=MQTT_BROKER_HOST,
+    broker_port=MQTT_BROKER_PORT,
+    topic=MQTT_TOPIC,
+    store_gateway=store_adapter,
+    redis_client=redis_client,
+    batch_size=BATCH_SIZE,
+)
 
 # FastAPI
 app = FastAPI()
+
+mqtt_adapter.start()
+
 
 
 @app.post("/processed_agent_data/")
