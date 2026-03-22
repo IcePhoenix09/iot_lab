@@ -4,7 +4,7 @@ import redis
 from app.adapters.agent_mqtt_adapter import AgentMQTTAdapter
 from app.interfaces.store_gateway import StoreGateway
 from app.entities.agent_data import AccelerometerData, AgentData, GpsData
-from app.usecases.data_processing import process_agent_data_batch
+from app.entities.processed_agent_data import ProcessedAgentData
 
 class TestAgentMQTTAdapter(unittest.TestCase):
     def setUp(self):
@@ -20,15 +20,18 @@ class TestAgentMQTTAdapter(unittest.TestCase):
             redis_client=self.mock_redis,
             batch_size=1,
         )
+
     def test_on_message_valid_data(self):
         # Test handling of valid incoming MQTT message
-        # (Assuming data is in the correct JSON format)
-        valid_json_data = '{"user_id": 1,"accelerometer": {"x": 0.1, "y": 0.2, "z": 0.3}, "gps": {"latitude": 10.123, "longitude": 20.456}, "timestamp": "2023-07-21T12:34:56Z"}'
+        valid_json_data = '{"road_state": "normal", "agent_data": {"user_id": 1, "accelerometer": {"x": 0.1, "y": 0.2, "z": 0.3}, "gps": {"latitude": 10.123, "longitude": 20.456}, "timestamp": "2023-07-21T12:34:56Z"}}'
         mock_msg = Mock(payload=valid_json_data.encode("utf-8"))
+        
         self.mock_redis.llen.return_value = 1
-        self.mock_redis.rpop.return_value = valid_json_data
+        self.mock_redis.lpop.return_value = valid_json_data
+
         # Call on_message with the mock message
         self.agent_adapter.on_message(None, None, mock_msg)
+
         # Ensure that the store_gateway's save_data method is called once with the correct arguments
         expected_agent_data = AgentData(
             user_id=1,
@@ -43,9 +46,16 @@ class TestAgentMQTTAdapter(unittest.TestCase):
             ),
             timestamp="2023-07-21T12:34:56Z",
         )
-        self.mock_store_gateway.save_data.assert_called_once_with(
-            process_agent_data_batch([expected_agent_data])
+        expected_processed_data = ProcessedAgentData(
+            road_state="normal", 
+            agent_data=expected_agent_data
         )
+
+        # test that save_data was called with the correct batch of ProcessedAgentData
+        self.mock_store_gateway.save_data.assert_called_once_with(
+            processed_agent_data_batch=[expected_processed_data]
+        )
+
     def test_on_message_invalid_data(self):
         # Test handling of invalid incoming MQTT message
         # (Assuming data is missing required fields or has incorrect format)
