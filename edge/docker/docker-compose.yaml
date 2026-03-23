@@ -1,6 +1,16 @@
 version: "3.9"
 # name: "road_vision"
 services:
+  fake_agent:
+    container_name: agent
+    build: ../../agent
+    depends_on:
+    - mqtt
+    environment:
+      MQTT_BROKER_HOST: "mqtt"
+    networks:
+      mqtt_network:
+
   mqtt:
     image: eclipse-mosquitto
     container_name: mqtt
@@ -23,7 +33,7 @@ services:
     environment:
       MQTT_BROKER_HOST: "mqtt"
       MQTT_BROKER_PORT: 1883
-      MQTT_TOPIC: " "
+      MQTT_TOPIC: "agent_data_topic"
       HUB_HOST: "store"
       HUB_PORT: 8000
       HUB_MQTT_BROKER_HOST: "mqtt"
@@ -31,18 +41,7 @@ services:
       HUB_MQTT_TOPIC: "processed_data_topic"
     networks:
       mqtt_network:
-      edge_hub:
 
 
 networks:
   mqtt_network:
-  db_network:
-  edge_hub:
-  hub:
-  hub_store:
-  hub_redis:
-
-
-volumes:
-  postgres_data:
-  pgadmin-data:
