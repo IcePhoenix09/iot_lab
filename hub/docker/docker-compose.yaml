@@ -5,7 +5,7 @@ services:
     image: eclipse-mosquitto
     container_name: mqtt
     volumes:
-      - ./mosquitto:/mosquitto
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
     ports:
