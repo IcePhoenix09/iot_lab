@@ -22,7 +22,7 @@ class StoreApiAdapter(StoreGateway):
             bool: True if the data is successfully saved, False otherwise.
         """
         # get json data
-        payload = [data.model_dump() for data in processed_agent_data_batch]
+        payload = [data.model_dump(mode='json') for data in processed_agent_data_batch]
         
         # зробити post запит на ‘{store_host}/processed_agent_data’ з списком елементів ProcessedAgentData.
         endpoint = f"{self.api_base_url}/processed_agent_data"
