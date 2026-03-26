@@ -51,6 +51,7 @@ def run():
     client = connect_mqtt(config.MQTT_BROKER_HOST, config.MQTT_BROKER_PORT)
     # Prepare datasource
     datasource = FileDatasource(
+        config.USER_ID,
         "data/accelerometer.csv", 
         "data/gps.csv", 
         "data/parking.csv"

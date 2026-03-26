@@ -14,3 +14,6 @@ MQTT_TOPIC = os.environ.get('MQTT_TOPIC') or 'agent_data_topic'
 
 # Delay for sending data to mqtt in seconds
 DELAY = try_parse(float, os.environ.get('DELAY')) or 0.1
+
+# For multiple agents, we can set ID
+USER_ID = try_parse(int, os.environ.get('USER_ID')) or 1

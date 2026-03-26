@@ -4,10 +4,11 @@ from models import Accelerometer, Gps, AggregatedData, Parking
 
 
 class FileDatasource:
-    def __init__(self, accel_filename: str, gps_filename: str, parking_filename: str) -> None:
+    def __init__(self, id: int, accel_filename: str, gps_filename: str, parking_filename: str) -> None:
         self.accel_filename = accel_filename
         self.gps_filename = gps_filename
         self.parking_filename = parking_filename
+        self.user_id = id
 
     def startReading(self, *args, **kwargs):
         """Метод повинен викликатись перед початком читання даних"""
@@ -31,6 +32,7 @@ class FileDatasource:
             row_p = next(self.parking_reader)
 
         aggregated = AggregatedData(
+            self.user_id,
             Accelerometer(int(row_a['x']), int(row_a['y']), int(row_a['z'])),
             Gps(float(row_g['longitude']), float(row_g['latitude'])),
             datetime.now()
