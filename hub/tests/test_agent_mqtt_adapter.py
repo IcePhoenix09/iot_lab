@@ -23,7 +23,7 @@ class TestAgentMQTTAdapter(unittest.TestCase):
 
     def test_on_message_valid_data(self):
         # Test handling of valid incoming MQTT message
-        valid_json_data = '{"road_state": "normal", "agent_data": {"user_id": 1, "accelerometer": {"x": 0.1, "y": 0.2, "z": 0.3}, "gps": {"latitude": 10.123, "longitude": 20.456}, "timestamp": "2023-07-21T12:34:56Z"}}'
+        valid_json_data = '{"road_state": "normal", "state_code": 0, "agent_data": {"user_id": 1, "accelerometer": {"x": 0.1, "y": 0.2, "z": 0.3}, "gps": {"latitude": 10.123, "longitude": 20.456}, "timestamp": "2023-07-21T12:34:56Z"}}'
         mock_msg = Mock(payload=valid_json_data.encode("utf-8"))
         
         self.mock_redis.llen.return_value = 1
@@ -48,6 +48,7 @@ class TestAgentMQTTAdapter(unittest.TestCase):
         )
         expected_processed_data = ProcessedAgentData(
             road_state="normal", 
+            state_code=0,
             agent_data=expected_agent_data
         )
 
