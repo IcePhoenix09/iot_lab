@@ -26,15 +26,15 @@ class TestStoreApiAdapter(unittest.TestCase):
             ),
             timestamp="2023-07-21T12:34:56Z",
         )
-        processed_data = ProcessedAgentData(road_state="normal", agent_data=agent_data)
+        processed_data = ProcessedAgentData(road_state="normal", state_code=0, agent_data=agent_data)
         # Mock the response from the Store API
         mock_response = Mock(status_code=201)  # 201 indicates successful creation
         mock_post.return_value = mock_response
         # Call the save_data method
-        result = self.store_api_adapter.save_data(processed_data)
+        result = self.store_api_adapter.save_data([processed_data])
         # Ensure that the post method of the mock is called with the correct arguments
         mock_post.assert_called_once_with(
-            "http://test-api.com/agent_data", json=processed_data.model_dump()
+            "http://test-api.com/processed_agent_data", json=[processed_data.model_dump(mode='json')]
         )
         # Ensure that the result is True, indicating successful saving
         self.assertTrue(result)
@@ -55,15 +55,17 @@ class TestStoreApiAdapter(unittest.TestCase):
             ),
             timestamp="2023-07-21T12:34:56Z",
         )
-        processed_data = ProcessedAgentData(road_state="normal", agent_data=agent_data)
+        processed_data = ProcessedAgentData(road_state="normal", state_code=0, agent_data=agent_data)
         # Mock the response from the Store API
         mock_response = Mock(status_code=400)  # 400 indicates a client error
+        # We must mock the exception that requests.post raises on bad status codes
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("400 Client Error")
         mock_post.return_value = mock_response
         # Call the save_data method
-        result = self.store_api_adapter.save_data(processed_data)
+        result = self.store_api_adapter.save_data([processed_data])
         # Ensure that the post method of the mock is called with the correct arguments
         mock_post.assert_called_once_with(
-            "http://test-api.com/agent_data", json=processed_data.model_dump()
+            "http://test-api.com/processed_agent_data", json=[processed_data.model_dump(mode='json')]
         )
         # Ensure that the result is False, indicating failure to save
         self.assertFalse(result)

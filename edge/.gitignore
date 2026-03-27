@@ -1,2 +1,5 @@
 venv
 app.log
+
+docker/mosquitto/data/*
+docker/mosquitto/log/*

@@ -10,6 +10,7 @@ class GpsSchema(Schema):
     latitude = fields.Float()
 
 class AggregatedDataSchema(Schema):
+    user_id = fields.Int()
     accelerometer = fields.Nested(AccelerometerSchema)
     gps = fields.Nested(GpsSchema)
     time = fields.DateTime('iso')
