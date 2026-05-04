@@ -37,7 +37,7 @@ class Datasource:
         self.user_id = user_id
         self.connection_status = None
         self._new_points = []
-        asyncio.ensure_future(self.connect_to_server())
+        self._task = asyncio.ensure_future(self.connect_to_server())
 
     def get_new_points(self):
         Logger.debug(self._new_points)
@@ -48,34 +48,65 @@ class Datasource:
     async def connect_to_server(self):
         uri = f"ws://{STORE_HOST}:{STORE_PORT}/ws/{self.user_id}"
         while True:
-            Logger.debug("CONNECT TO SERVER")
-            async with websockets.connect(uri) as websocket:
-                self.connection_status = "Connected"
-                try:
-                    while True:
-                        data = await websocket.recv()
-                        parsed_data = json.loads(data)
-                        self.handle_received_data(parsed_data)
-                except websockets.ConnectionClosedOK:
-                    self.connection_status = "Disconnected"
-                    Logger.debug("SERVER DISCONNECT")
+            Logger.info(f"WebSocket: З'єднуємось з {uri} ...")
+            try:
+                async with websockets.connect(uri) as websocket:
+                    self.connection_status = "Connected"
+                    Logger.info("WebSocket: УСПІШНО ПІДКЛЮЧЕНО!")
+                    try:
+                        while True:
+                            try:
+                                # Чекаємо дані 1 секунду, якщо немає - відпускаємо цикл і перевіряємо знову
+                                data = await asyncio.wait_for(websocket.recv(), timeout=1.0)
+                                Logger.info(f"WebSocket: ОТРИМАНО ДАНІ: {data}")
+                                parsed_data = json.loads(data)
+                                if isinstance(parsed_data, str):
+                                    parsed_data = json.loads(parsed_data)
+                                self.handle_received_data(parsed_data)
+                            except asyncio.TimeoutError:
+                                await asyncio.sleep(0.01)
+                                continue
+                    except Exception as e:
+                        Logger.error(f"WebSocket: Помилка під час читання: {e}")
+            except Exception as e:
+                self.connection_status = "Disconnected"
+                Logger.error(f"WebSocket: Помилка підключення: {e}")
+            
+            Logger.info("WebSocket: Повторна спроба через 2 секунди...")
+            await asyncio.sleep(2)
 
     def handle_received_data(self, data):
         # Update your UI or perform actions with received data here
         Logger.debug(f"Received data: {data}")
-        processed_agent_data_list = sorted(
-            [
-                ProcessedAgentData(**processed_data_json)
-                for processed_data_json in json.loads(data)
-            ],
-            key=lambda v: v.timestamp,
-        )
-        new_points = [
-            (
-                processed_agent_data.latitude,
-                processed_agent_data.longitude,
-                processed_agent_data.road_state,
+        
+        if isinstance(data, dict):
+            data = [data]
+            
+        try:
+            processed_agent_data_list = sorted(
+                [
+                    ProcessedAgentData(
+                        road_state=item.get("road_state", "normal"),
+                        user_id=item["agent_data"]["user_id"],
+                        x=item["agent_data"]["accelerometer"]["x"],
+                        y=item["agent_data"]["accelerometer"]["y"],
+                        z=item["agent_data"]["accelerometer"]["z"],
+                        latitude=item["agent_data"]["gps"]["latitude"],
+                        longitude=item["agent_data"]["gps"]["longitude"],
+                        timestamp=item["agent_data"]["timestamp"],
+                    )
+                    for item in data
+                ],
+                key=lambda v: v.timestamp,
             )
-            for processed_agent_data in processed_agent_data_list
-        ]
-        self._new_points.extend(new_points)
+            new_points = [
+                (
+                    processed_agent_data.latitude,
+                    processed_agent_data.longitude,
+                    processed_agent_data.road_state,
+                )
+                for processed_agent_data in processed_agent_data_list
+            ]
+            self._new_points.extend(new_points)
+        except Exception as e:
+            Logger.error(f"Error parsing received data: {e}")
