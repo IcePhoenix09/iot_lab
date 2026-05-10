@@ -29,6 +29,16 @@ def publish(client, topic, datasource, delay):
     road_schema = AggregatedDataSchema()
     parking_schema = ParkingSchema()
 
+    print("Publishing initial states for 500 parking sensors...")
+    initial_states = datasource.get_initial_parking_states()
+    for p_data in initial_states:
+        msg_parking = parking_schema.dumps(p_data)
+        client.publish("parking_data_topic", msg_parking)
+        # A tiny sleep prevents overwhelming the local Mosquitto broker instantly
+        time.sleep(0.01) 
+    
+    print("Initial states published. Starting continuous data stream...")
+
     while True:
         time.sleep(delay)
         road_data, parking_data = datasource.read()
@@ -39,11 +49,8 @@ def publish(client, topic, datasource, delay):
         msg_parking = parking_schema.dumps(parking_data)
         result_parking = client.publish("parking_data_topic", msg_parking)
 
-        if result_road[0] == 0 and result_parking[0] == 0:
-            pass
-            # print(f"Send `{msg}` to topic `{topic}`")
-        else:
-            print(f"Failed to send message to topic {topic}")
+        if result_road[0] != 0 or result_parking[0] != 0:
+            print(f"Failed to send message")
 
 
 def run():

@@ -16,5 +16,7 @@ class AggregatedDataSchema(Schema):
     time = fields.DateTime('iso')
 
 class ParkingSchema(Schema):
+    parking_id = fields.Int()
     empty_count = fields.Int()
     gps = fields.Nested(GpsSchema)
+    time = fields.DateTime('iso')

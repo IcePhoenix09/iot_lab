@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from app.entities.processed_agent_data import ProcessedAgentData
+from app.entities.parking_data import ParkingData
 
 
 class HubGateway(ABC):
@@ -17,4 +18,8 @@ class HubGateway(ABC):
         Returns:
             bool: True if the data is successfully saved, False otherwise.
         """
+        pass
+
+    @abstractmethod
+    def save_parking_data(self, parking_data: ParkingData) -> bool:
         pass

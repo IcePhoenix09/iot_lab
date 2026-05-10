@@ -21,5 +21,7 @@ class AggregatedData:
 
 @dataclass
 class Parking:
+    parking_id: int
     empty_count: int
     gps: Gps
+    time: datetime

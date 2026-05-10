@@ -4,14 +4,16 @@ import requests as requests
 from paho.mqtt import client as mqtt_client
 
 from app.entities.processed_agent_data import ProcessedAgentData
+from app.entities.parking_data import ParkingData
 from app.interfaces.hub_gateway import HubGateway
 
 
 class HubMqttAdapter(HubGateway):
-    def __init__(self, broker, port, topic):
+    def __init__(self, broker, port, topic, parking_topic="parking_data_topic"):
         self.broker = broker
         self.port = port
         self.topic = topic
+        self.parking_topic = parking_topic
         self.mqtt_client = self._connect_mqtt(broker, port)
 
     def save_data(self, processed_data: ProcessedAgentData):
@@ -29,6 +31,24 @@ class HubMqttAdapter(HubGateway):
             return True
         else:
             print(f"Failed to send message to topic {self.topic}")
+            return False
+
+    def save_parking_data(self, parking_data: ParkingData):
+        """
+        Save the parking data to the Hub.
+        Parameters:
+            parking_data (ParkingData): Parking data to be saved.
+        Returns:
+            bool: True if the data is successfully saved, False otherwise.
+        """
+        # use model_dump_json() to correctly serialize the datetime object
+        msg = parking_data.model_dump_json(by_alias=True)
+        result = self.mqtt_client.publish(self.parking_topic, msg)
+        status = result[0]
+        if status == 0:
+            return True
+        else:
+            print(f"Failed to send message to topic {self.parking_topic}")
             return False
 
     @staticmethod
