@@ -18,3 +18,7 @@ class AggregatedDataSchema(Schema):
 class ParkingSchema(Schema):
     empty_count = fields.Int()
     gps = fields.Nested(GpsSchema)
+
+class TrafficLightSchema(Schema):
+    state = fields.Str()
+    gps = fields.Nested(GpsSchema)

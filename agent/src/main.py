@@ -1,7 +1,7 @@
 from paho.mqtt import client as mqtt_client
 import json
 import time
-from schemas import AggregatedDataSchema, ParkingSchema
+from schemas import AggregatedDataSchema, ParkingSchema, TrafficLightSchema
 from file_datasource import FileDatasource
 import config
 
@@ -28,10 +28,11 @@ def publish(client, topic, datasource, delay):
     datasource.startReading()
     road_schema = AggregatedDataSchema()
     parking_schema = ParkingSchema()
+    traffic_light_schema = TrafficLightSchema()
 
     while True:
         time.sleep(delay)
-        road_data, parking_data = datasource.read()
+        road_data, parking_data, traffic_light_data = datasource.read()
         
         msg_road = road_schema.dumps(road_data)
         result_road = client.publish(topic, msg_road)
@@ -39,7 +40,10 @@ def publish(client, topic, datasource, delay):
         msg_parking = parking_schema.dumps(parking_data)
         result_parking = client.publish("parking_data_topic", msg_parking)
 
-        if result_road[0] == 0 and result_parking[0] == 0:
+        msg_traffic_light = traffic_light_schema.dumps(traffic_light_data)
+        result_traffic_light = client.publish("traffic_light_data_topic", msg_traffic_light)
+
+        if result_road[0] == 0 and result_parking[0] == 0 and result_traffic_light[0] == 0:
             pass
             # print(f"Send `{msg}` to topic `{topic}`")
         else:
@@ -54,7 +58,8 @@ def run():
         config.USER_ID,
         "data/accelerometer.csv", 
         "data/gps.csv", 
-        "data/parking.csv"
+        "data/parking.csv",
+        "data/traffic_light.csv"
     )
     # Infinity publish data
     publish(client, config.MQTT_TOPIC, datasource, config.DELAY)

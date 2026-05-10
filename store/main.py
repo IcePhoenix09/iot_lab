@@ -44,6 +44,27 @@ processed_agent_data = Table(
     Column("longitude", Float),
     Column("timestamp", DateTime),
 )
+
+parking_data = Table(
+    "parking_data",
+    metadata,
+    Column("id", Integer, primary_key=True, index=True),
+    Column("empty_count", Integer),
+    Column("latitude", Float),
+    Column("longitude", Float),
+    Column("timestamp", DateTime),
+)
+
+traffic_light_data = Table(
+    "traffic_light_data",
+    metadata,
+    Column("id", Integer, primary_key=True, index=True),
+    Column("state", String),
+    Column("latitude", Float),
+    Column("longitude", Float),
+    Column("timestamp", DateTime),
+)
+
 SessionLocal = sessionmaker(bind=engine)
 
 
@@ -94,6 +115,16 @@ class AgentData(BaseModel):
 class ProcessedAgentData(BaseModel):
     road_state: str
     agent_data: AgentData
+
+class ParkingData(BaseModel):
+    empty_count: int
+    latitude: float
+    longitude: float
+
+class TrafficLightData(BaseModel):
+    state: str
+    latitude: float
+    longitude: float
 
 
 # WebSocket subscriptions
@@ -146,6 +177,45 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
     for item in data:
         await send_data_to_subscribers(item.agent_data.user_id, json.loads(item.model_dump_json()))
     return {"message": "Data successfully created"}
+
+
+@app.post("/parking_data/")
+async def create_parking_data(data: List[Dict[str, Any]]):
+    with SessionLocal() as session:
+        for item in data:
+            # Очікуємо формат від Хаба: {"empty_count": X, "gps": {"latitude": Y, "longitude": Z}}
+            db_item = parking_data.insert().values(
+                empty_count=item['empty_count'],
+                latitude=item['gps']['latitude'],
+                longitude=item['gps']['longitude'],
+                timestamp=datetime.now()
+            )
+            session.execute(db_item)
+        session.commit()
+
+    # Надсилаємо дані підписникам для відображення на мапі
+    for item in data:
+        await send_data_to_subscribers(1, {"parking": item})
+    return {"message": "Parking data successfully created"}
+
+
+@app.post("/traffic_light_data/")
+async def create_traffic_light_data(data: List[Dict[str, Any]]):
+    with SessionLocal() as session:
+        for item in data:
+            db_item = traffic_light_data.insert().values(
+                state=item['state'],
+                latitude=item['gps']['latitude'],
+                longitude=item['gps']['longitude'],
+                timestamp=datetime.now()
+            )
+            session.execute(db_item)
+        session.commit()
+
+    # Надсилаємо дані підписникам для відображення на мапі
+    for item in data:
+        await send_data_to_subscribers(1, {"traffic_light": item})
+    return {"message": "Traffic light data successfully created"}
 
 
 @app.get(

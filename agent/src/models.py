@@ -23,3 +23,8 @@ class AggregatedData:
 class Parking:
     empty_count: int
     gps: Gps
+
+@dataclass
+class TrafficLight:
+    state: str
+    gps: Gps
