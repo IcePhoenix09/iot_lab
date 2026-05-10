@@ -98,95 +98,43 @@ class Datasource:
             await asyncio.sleep(2)
 
     def handle_received_data(self, data):
-        # Update your UI or perform actions with received data here
-        Logger.debug(f"Received data: {data}")
-        
-        if isinstance(data, dict):
-            data = [data]
+            # Update your UI or perform actions with received data here
+            Logger.debug(f"Received data: {data}")
             
-        try:
-            processed_agent_data_list = []
-            for item in data:
-                if "agent_data" in item:
-                    processed_agent_data_list.append(
-                        ProcessedAgentData(
-                            road_state=item.get("road_state", "normal"),
-                            user_id=item["agent_data"]["user_id"],
-                            x=item["agent_data"]["accelerometer"]["x"],
-                            y=item["agent_data"]["accelerometer"]["y"],
-                            z=item["agent_data"]["accelerometer"]["z"],
-                            latitude=item["agent_data"]["gps"]["latitude"],
-                            longitude=item["agent_data"]["gps"]["longitude"],
-                            timestamp=item["agent_data"]["timestamp"],
+            if isinstance(data, dict):
+                data = [data]
+                
+            try:
+                processed_agent_data_list = []
+                for item in data:
+                    if "agent_data" in item:
+                        processed_agent_data_list.append(
+                            ProcessedAgentData(
+                                road_state=item.get("road_state", "normal"),
+                                user_id=item["agent_data"]["user_id"],
+                                x=item["agent_data"]["accelerometer"]["x"],
+                                y=item["agent_data"]["accelerometer"]["y"],
+                                z=item["agent_data"]["accelerometer"]["z"],
+                                latitude=item["agent_data"]["gps"]["latitude"],
+                                longitude=item["agent_data"]["gps"]["longitude"],
+                                timestamp=item["agent_data"]["timestamp"],
+                            )
                         )
-                    )
-                elif "parking_data" in item:
-                    p_data = item["parking_data"]
-                    self._new_parking_points.append(
-                        (float(p_data["gps"]["latitude"]), float(p_data["gps"]["longitude"]), int(p_data["empty_count"]))
-                    )
-                elif "traffic_light_data" in item:
-                    t_data = item["traffic_light_data"]
-                    self._new_traffic_lights.append(
-                        (float(t_data["gps"]["latitude"]), float(t_data["gps"]["longitude"]), t_data["state"])
-                    )
-
-            if processed_agent_data_list:
-                processed_agent_data_list.sort(key=lambda v: v.timestamp)
-                new_points = [(p.latitude, p.longitude, p.road_state) for p in processed_agent_data_list]
-                self._new_points.extend(new_points)
-
-        except Exception as e:
-            Logger.error(f"Error parsing received data: {e}")
-                        x=item["agent_data"]["accelerometer"]["x"],
-                        y=item["agent_data"]["accelerometer"]["y"],
-                        z=item["agent_data"]["accelerometer"]["z"],
-                        latitude=item["agent_data"]["gps"]["latitude"],
-                        longitude=item["agent_data"]["gps"]["longitude"],
-                        timestamp=item["agent_data"]["timestamp"],
-            processed_agent_data_list = []
-            for item in data:
-                if "agent_data" in item:
-                    processed_agent_data_list.append(
-                        ProcessedAgentData(
-                            road_state=item.get("road_state", "normal"),
-                            user_id=item["agent_data"]["user_id"],
-                            x=item["agent_data"]["accelerometer"]["x"],
-                            y=item["agent_data"]["accelerometer"]["y"],
-                            z=item["agent_data"]["accelerometer"]["z"],
-                            latitude=item["agent_data"]["gps"]["latitude"],
-                            longitude=item["agent_data"]["gps"]["longitude"],
-                            timestamp=item["agent_data"]["timestamp"],
+                    elif "parking_data" in item:
+                        p_data = item["parking_data"]
+                        self._new_parking_points.append(
+                            (float(p_data["gps"]["latitude"]), float(p_data["gps"]["longitude"]), int(p_data["empty_count"]))
                         )
-                    )
-                    for item in data
-                ],
-                key=lambda v: v.timestamp,
-            )
-            new_points = [
-                (
-                    processed_agent_data.latitude,
-                    processed_agent_data.longitude,
-                    processed_agent_data.road_state,
-                )
-                for processed_agent_data in processed_agent_data_list
-            ]
-            self._new_points.extend(new_points)
-                elif "parking_data" in item:
-                    p_data = item["parking_data"]
-                    self._new_parking_points.append(
-                        (float(p_data["gps"]["latitude"]), float(p_data["gps"]["longitude"]), int(p_data["empty_count"]))
-                    )
-                elif "traffic_light_data" in item:
-                    t_data = item["traffic_light_data"]
-                    self._new_traffic_lights.append(
-                        (float(t_data["gps"]["latitude"]), float(t_data["gps"]["longitude"]), t_data["state"])
-                    )
+                    elif "traffic_light_data" in item:
+                        t_data = item["traffic_light_data"]
+                        self._new_traffic_lights.append(
+                            (float(t_data["gps"]["latitude"]), float(t_data["gps"]["longitude"]), t_data["state"])
+                        )
 
-            if processed_agent_data_list:
-                processed_agent_data_list.sort(key=lambda v: v.timestamp)
-                new_points = [(p.latitude, p.longitude, p.road_state) for p in processed_agent_data_list]
-                self._new_points.extend(new_points)
+                if processed_agent_data_list:
+                    processed_agent_data_list.sort(key=lambda v: v.timestamp)
+                    new_points = [(p.latitude, p.longitude, p.road_state) for p in processed_agent_data_list]
+                    self._new_points.extend(new_points)
 
-        except Exception as e:
-            Logger.error(f"Error parsing received data: {e}")
+            except Exception as e:
+                Logger.error(f"Error parsing received data: {e}")
