@@ -1,6 +1,22 @@
 version: "3.9"
 name: "road_vision__hub"
 services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes: # Add this volumes block
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - postgres_db
+    networks:
+      - db_network
+
   mqtt:
     image: eclipse-mosquitto
     container_name: mqtt
