@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List
+from typing import List, Any
 
 import pydantic_core
 import requests
@@ -35,4 +35,28 @@ class StoreApiAdapter(StoreGateway):
             return True
         except requests.exceptions.RequestException as e:
             logging.error(f"Error occurred while sending data to Store API: {e}")
+            return False
+
+    def save_parking_data(self, parking_data_batch: List[Any]):
+        endpoint = f"{self.api_base_url}/parking_data"
+        try:
+            payload = [data.model_dump(mode='json') if hasattr(data, 'model_dump') else data for data in parking_data_batch]
+            response = requests.post(endpoint, json=payload)
+            response.raise_for_status()
+            logging.info(f"Success: {len(parking_data_batch)} parking records saved to Store.")
+            return True
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error occurred while sending parking data to Store API: {e}")
+            return False
+
+    def save_traffic_light_data(self, traffic_light_data_batch: List[Any]):
+        endpoint = f"{self.api_base_url}/traffic_light_data"
+        try:
+            payload = [data.model_dump(mode='json') if hasattr(data, 'model_dump') else data for data in traffic_light_data_batch]
+            response = requests.post(endpoint, json=payload)
+            response.raise_for_status()
+            logging.info(f"Success: {len(traffic_light_data_batch)} traffic light records saved to Store.")
+            return True
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error occurred while sending traffic light data to Store API: {e}")
             return False

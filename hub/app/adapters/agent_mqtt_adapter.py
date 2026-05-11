@@ -1,4 +1,5 @@
 import logging
+import json
 import paho.mqtt.client as mqtt
 from typing import List
 from redis import Redis
@@ -32,33 +33,45 @@ class AgentMQTTAdapter:
         if rc == 0:
             logging.info(f"Connected to MQTT broker. Subscribing to topic: {self.topic}")
             client.subscribe(self.topic)
+            client.subscribe("parking_data_topic")
+            client.subscribe("traffic_light_data_topic")
         else:
             logging.error(f"Failed to connect to MQTT broker with code: {rc}")
 
     def on_message(self, client, userdata, msg):
         try:
             payload: str = msg.payload.decode("utf-8")
-            # Create ProcessedAgentData instance with the received data
-            processed_agent_data = ProcessedAgentData.model_validate_json(
-                payload, strict=True
-            )
-
-            self.redis_client.lpush(
-                "processed_agent_data", processed_agent_data.model_dump_json()
-            )
             
-            processed_agent_data_batch: List[ProcessedAgentData] = []
-            if self.redis_client.llen("processed_agent_data") >= self.batch_size:
+            if msg.topic == self.topic:
+                # Create ProcessedAgentData instance with the received data
+                processed_agent_data = ProcessedAgentData.model_validate_json(
+                    payload, strict=True
+                )
+    
+                self.redis_client.lpush(
+                    "processed_agent_data", processed_agent_data.model_dump_json()
+                )
                 
-                # get data from Redis
-                for _ in range(self.batch_size):
-                    data = ProcessedAgentData.model_validate_json(
-                        self.redis_client.lpop("processed_agent_data")
-                    )
-                    processed_agent_data_batch.append(data)
+                processed_agent_data_batch: List[ProcessedAgentData] = []
+                if self.redis_client.llen("processed_agent_data") >= self.batch_size:
+                    
+                    # get data from Redis
+                    for _ in range(self.batch_size):
+                        data = ProcessedAgentData.model_validate_json(
+                            self.redis_client.lpop("processed_agent_data")
+                        )
+                        processed_agent_data_batch.append(data)
+                    
+                    # sent to Store API
+                    self.store_gateway.save_data(processed_agent_data_batch=processed_agent_data_batch)
+            
+            elif msg.topic == "parking_data_topic":
+                parking_data = json.loads(payload)
+                self.store_gateway.save_parking_data([parking_data])
                 
-                # sent to Store API
-                self.store_gateway.save_data(processed_agent_data_batch=processed_agent_data_batch)
+            elif msg.topic == "traffic_light_data_topic":
+                traffic_light_data = json.loads(payload)
+                self.store_gateway.save_traffic_light_data([traffic_light_data])
                 
         except Exception as e:
             logging.error(f"Error processing MQTT message: {e}")

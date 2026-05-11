@@ -33,6 +33,9 @@ class MapViewApp(App):
         Викликається регулярно для оновлення мапи
         """
         points = self.datasource.get_new_points()
+        parking_points = self.datasource.get_new_parking()
+        traffic_lights = self.datasource.get_new_traffic_lights()
+
         if points:
             Logger.info(f"Map: Отримано {len(points)} нових точок для малювання!")
         
@@ -48,6 +51,12 @@ class MapViewApp(App):
                 self.set_pothole_marker((lat, lon))
             elif state == "bump":
                 self.set_bump_marker((lat, lon))
+                
+        for lat, lon, empty_count in parking_points:
+            self.set_parking_marker((lat, lon), empty_count)
+            
+        for lat, lon, state in traffic_lights:
+            self.set_traffic_light_marker((lat, lon), state)
 
     def update_car_marker(self, point):
         """
@@ -75,6 +84,21 @@ class MapViewApp(App):
         """
         bump = MapMarker(lat=point[0], lon=point[1], source="images/bump.png")
         self.mapview.add_widget(bump)
+
+    def set_parking_marker(self, point, empty_count):
+        """
+        Встановлює маркер для парковки
+        """
+        parking = MapMarker(lat=point[0], lon=point[1], source="images/parking.png")
+        self.mapview.add_widget(parking)
+
+    def set_traffic_light_marker(self, point, state):
+        """
+        Встановлює маркер для світлофора
+        """
+        icon_source = f"images/traffic_{state}.png" if state in ["red", "yellow", "green"] else "images/traffic_light.png"
+        tl = MapMarker(lat=point[0], lon=point[1], source=icon_source)
+        self.mapview.add_widget(tl)
 
     def build(self):
         """
